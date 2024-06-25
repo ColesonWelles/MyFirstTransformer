@@ -79,11 +79,10 @@ class MultiHeadAttentionBlock(nn.Module):
         assert d_model % h == 0, "d_model is not divisible by h"
 
         self.d_k = d_model // h
-        self.w_q = nn.Linear(d_model, d_model) # Wq
-        self.w_k = nn.Linear(d_model, d_model) # Wk
-        self.w_v = nn.Linear(d_model, d_model) # Wv
-        
-        self.w_o = nn.Linear(d_model, d_model) # Wo
+        self.w_q = nn.Linear(d_model, d_model, bias=False) # Wq
+        self.w_k = nn.Linear(d_model, d_model, bias=False) # Wk
+        self.w_v = nn.Linear(d_model, d_model, bias=False) # Wv
+        self.w_o = nn.Linear(d_model, d_model, bias=False) # Wo
         self.dropout = nn.Dropout(dropout)
 
     @staticmethod
@@ -114,7 +113,7 @@ class MultiHeadAttentionBlock(nn.Module):
         x, self.attention_scores = MultiHeadAttentionBlock.attention(query, key, value, mask, self.dropout)
 
         # (batch, h, seq_len, d_k) T-> (batch, seq)len, h, d_k) -> (batch, seq_len, d_model)
-        x = x.transpose(1, 2).contiguous().view(x.shape[0], -1, self.h * self.d_k)
+        x = x.transpose(1, 2).contiguous().reshape(x.shape[0], -1, self.h * self.d_k)
         
         # (batch, seq_len, d_model) -> (batch, seq_len, d_model)
         return self.w_o(x)
@@ -136,8 +135,7 @@ class EncoderBlock(nn.Module):
         super().__init__()
         self.self_attention_block = self_attention_block
         self.feed_forward_block = feed_forward_block
-        self.residual_connections = nn.ModuleList([ResidualConnection(dropout)
-                                                   for _ in range(2)])
+        self.residual_connections = nn.ModuleList([ResidualConnection(dropout) for _ in range(2)])
         
     def forward(self, x, src_mask):
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, src_mask))
