@@ -79,7 +79,8 @@ def train_model(config):
     Path(config['model_folder']).mkdir(parents=True, exist_ok=True)
 
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
-    model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size().to(device))
+    model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size())
+    model.to(device)
 
     # Tensorboard
     writer = SummaryWriter(config['experiment_name'])
@@ -98,7 +99,7 @@ def train_model(config):
 
     # Using label smoothing so that the model is less sure of its choices to help prevent overfit
     loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), 
-                                  label_smoothing=0.1.to(device))
+                                  label_smoothing=0.1)
     
     # Training loop proper
     for epoch in range(intial_epoch, config['num_epochs']):
@@ -144,5 +145,5 @@ def train_model(config):
 
 if __name__ == '__main__':
     warnings.filterwarnings('ignore')
-    config = get_config
+    config = get_config()
     train_model(config)
