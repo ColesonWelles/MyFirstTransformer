@@ -107,9 +107,9 @@ class MultiHeadAttentionBlock(nn.Module):
         value = self.w_v(v) # (batch, seq_len, d_model) -> (batch, seq_len, d_model)
 
         # (batch, seq_len, d_model) -> (batch, seq_len, h, d_k) T-> (batch, seq_len, d_k)
-        query = query.view(query.shape[0], query.shape[1], self.h, self.d_k).transpose(1, 2)
-        key = query.view(key.shape[0], key.shape[1], self.h, self.d_k).transpose(1, 2)
-        value = value.view(value.shape[0], value.shape[1], self.h, self.d_k).transpose(1, 2)
+        query = query.reshape(query.shape[0], query.shape[1], self.h, self.d_k).transpose(1, 2)
+        key = query.reshape(key.shape[0], key.shape[1], self.h, self.d_k).transpose(1, 2)
+        value = value.reshape(value.shape[0], value.shape[1], self.h, self.d_k).transpose(1, 2)
 
         x, self.attention_scores = MultiHeadAttentionBlock.attention(query, key, value, mask, self.dropout)
 
@@ -167,7 +167,7 @@ class DecoderBlock(nn.Module):
     
     def forward(self, x, encoder_output, src_mask, tgt_mask):
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, tgt_mask))
-        x = self.residual_connections[1](x, lambda x: self.cross_attention_block(x, encoder_output, src_mask))
+        x = self.residual_connections[1](x, lambda x: self.cross_attention_block(x, encoder_output, src_mask, None))
         x = self.residual_connections[2](x, self.feed_forward_block)
         return x
     
